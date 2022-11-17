@@ -5,22 +5,24 @@ export default {
     const url = new URL(req.url);
     console.log(req.method, url.pathname);
     if (url.pathname === "/") {
+      /** @type {ReadableStream<Uint8Array> | null} */
+      let body = null;
       switch (req.method) {
         case "GET":
-          return new Response(
-            intoStream(async () => {
-              const { default: render } = await import("./index.js");
-              return render();
-            }).pipeThrough(new TextEncoderStream())
-          );
+          body = intoStream(async () => {
+            const { default: render } = await import("./index.js");
+            return render();
+          }).pipeThrough(new TextEncoderStream());
+          break;
         case "HEAD":
-          return new Response(null, {
-            status: 200,
-            headers: { "Transfer-Encoding": "chunked" },
-          });
+          break;
         default:
           return new Response(null, { status: 405 });
       }
+      return new Response(body, {
+        status: 200,
+        headers: { "Transfer-Encoding": "chunked" },
+      });
     }
     return new Response(null, { status: 404 });
   },
